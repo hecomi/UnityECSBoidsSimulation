@@ -19,14 +19,44 @@ public class Simulation1 : MonoBehaviour
         get { return boids_.AsReadOnly(); }
     }
 
+    void AddBoid()
+    {
+        var go = Instantiate(boidPrefab, Random.insideUnitSphere, Random.rotation);
+        go.transform.SetParent(transform);
+        var boid = go.GetComponent<Boid1>();
+        boid.simulation = this;
+        boids_.Add(boid);
+    }
+
+    void RemoveBoid()
+    {
+        if (boids_.Count == 0) return;
+
+        var lastIndex = boids_.Count - 1;
+        var boid = boids_[lastIndex];
+        Destroy(boid.gameObject);
+        boids_.RemoveAt(lastIndex);
+    }
+
     void Start()
     {
         for (int i = 0; i < boidCount; ++i)
         {
-            var go = Instantiate(boidPrefab, Random.insideUnitSphere, Random.rotation);
-            var boid = go.GetComponent<Boid1>();
-            boid.simulation = this;
-            boids_.Add(boid);
+            AddBoid();
+        }
+    }
+
+    void Update()
+    {
+        while (boids_.Count < boidCount)
+        {
+            Debug.Log("add");
+            AddBoid();
+        }
+        while (boids_.Count > boidCount)
+        {
+            Debug.Log("remove");
+            RemoveBoid();
         }
     }
 
