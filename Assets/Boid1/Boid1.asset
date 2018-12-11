@@ -8,10 +8,16 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 0}
-  m_Name: Boid Param
-  m_EditorClassIdentifier: Assembly-CSharp::BoidParam
+  m_Script: {fileID: 11500000, guid: a70e7c0b91cb84caf80a00dfc06914eb, type: 3}
+  m_Name: Boid1
+  m_EditorClassIdentifier: 
   initSpeed: 2
   minSpeed: 2
   maxSpeed: 5
-  distance: 5
+  neighborDistance: 1
+  neighborFov: 90
+  separationWeight: 5
+  wallDistance: 3
+  wallWeight: 1
+  alignmentWeight: 2
+  cohesionWeight: 3
