@@ -9,7 +9,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a70e7c0b91cb84caf80a00dfc06914eb, type: 3}
-  m_Name: Boid1
+  m_Name: Boid
   m_EditorClassIdentifier: 
   initSpeed: 2
   minSpeed: 2
@@ -17,7 +17,8 @@ MonoBehaviour:
   neighborDistance: 1
   neighborFov: 90
   separationWeight: 5
-  wallDistance: 3
+  wallScale: 5
+  wallDistance: 2
   wallWeight: 1
   alignmentWeight: 2
   cohesionWeight: 3

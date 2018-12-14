@@ -206,11 +206,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 104f059ce55a044529aaf5c70d000a39, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  boidCount: 50
+  boidCount: 100
   boidPrefab: {fileID: 1103657446341984, guid: 969f3f70ec16241b2961699e21a71929, type: 2}
-  separationDistance: 2
-  separationWeight: 5
-  obstaclesWeight: 10
+  param: {fileID: 11400000, guid: b4d1e89f21b5e48e1a9817346dd475fe, type: 2}
 --- !u!4 &310702166
 Transform:
   m_ObjectHideFlags: 0
@@ -219,7 +217,7 @@ Transform:
   m_GameObject: {fileID: 310702164}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 5, y: 5, z: 5}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 2

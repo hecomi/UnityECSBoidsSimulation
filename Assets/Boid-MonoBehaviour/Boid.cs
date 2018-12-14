@@ -1,21 +1,17 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
 
-namespace Boid1
+namespace Boid.OOP
 {
 
-public class Boid1 : MonoBehaviour
+public class Boid : MonoBehaviour
 {
-    [SerializeField]
-    Boid1Param param;
-
-    public Simulation1 simulation { get; set; }
-
+    public Simulation simulation { get; set; }
+    public Param param { get; set; }
     public Vector3 pos { get; private set; }
     public Vector3 velocity { get; private set; }
     Vector3 accel = Vector3.zero;
-
-    List<Boid1> neighbors = new List<Boid1>();
+    List<Boid> neighbors = new List<Boid>();
 
     void Start()
     {
@@ -82,14 +78,14 @@ public class Boid1 : MonoBehaviour
     {
         if (!simulation) return;
 
-        var walls = simulation.GetWallScale();
+        var scale = param.wallScale * 0.5f;
         accel +=
-            GetAccelAgainstWall(-walls.x - pos.x, Vector3.right) +
-            GetAccelAgainstWall(-walls.y - pos.y, Vector3.up) +
-            GetAccelAgainstWall(-walls.z - pos.z, Vector3.forward) +
-            GetAccelAgainstWall(+walls.x - pos.x, Vector3.left) +
-            GetAccelAgainstWall(+walls.y - pos.y, Vector3.down) +
-            GetAccelAgainstWall(+walls.z - pos.z, Vector3.back);
+            GetAccelAgainstWall(-scale - pos.x, Vector3.right) +
+            GetAccelAgainstWall(-scale - pos.y, Vector3.up) +
+            GetAccelAgainstWall(-scale - pos.z, Vector3.forward) +
+            GetAccelAgainstWall(+scale - pos.x, Vector3.left) +
+            GetAccelAgainstWall(+scale - pos.y, Vector3.down) +
+            GetAccelAgainstWall(+scale - pos.z, Vector3.back);
     }
 
     Vector3 GetAccelAgainstWall(float distance, Vector3 dir)

@@ -2,10 +2,10 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 
-namespace Boid1
+namespace Boid.OOP
 {
 
-public class Simulation1 : MonoBehaviour
+public class Simulation : MonoBehaviour
 {
     [SerializeField]
     int boidCount = 100;
@@ -13,8 +13,11 @@ public class Simulation1 : MonoBehaviour
     [SerializeField]
     GameObject boidPrefab;
 
-    List<Boid1> boids_ = new List<Boid1>();
-    public ReadOnlyCollection<Boid1> boids
+    [SerializeField]
+    Param param;
+
+    List<Boid> boids_ = new List<Boid>();
+    public ReadOnlyCollection<Boid> boids
     {
         get { return boids_.AsReadOnly(); }
     }
@@ -23,8 +26,9 @@ public class Simulation1 : MonoBehaviour
     {
         var go = Instantiate(boidPrefab, Random.insideUnitSphere, Random.rotation);
         go.transform.SetParent(transform);
-        var boid = go.GetComponent<Boid1>();
+        var boid = go.GetComponent<Boid>();
         boid.simulation = this;
+        boid.param = param;
         boids_.Add(boid);
     }
 
@@ -60,15 +64,11 @@ public class Simulation1 : MonoBehaviour
         }
     }
 
-    public Vector3 GetWallScale()
-    {
-        return transform.localScale * 0.5f;
-    }
-
     void OnDrawGizmos()
     {
+        if (!param) return;
         Gizmos.color = Color.green;
-        Gizmos.DrawWireCube(Vector3.zero, transform.localScale);
+        Gizmos.DrawWireCube(Vector3.zero, Vector3.one * param.wallScale);
     }
 }
 
