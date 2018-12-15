@@ -4,7 +4,7 @@ using Unity.Collections;
 using Unity.Mathematics;
 using UnityEngine;
 
-namespace Boid.PureECS
+namespace Boid.PureECS.Sample1
 {
 
 public class WallSystem : ComponentSystem

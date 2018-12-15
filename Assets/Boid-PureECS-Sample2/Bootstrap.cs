@@ -4,7 +4,7 @@ using Unity.Transforms;
 using Unity.Mathematics;
 using Unity.Rendering;
 
-namespace Boid.PureECS
+namespace Boid.PureECS.Sample2
 {
 
 public class Bootstrap : MonoBehaviour 
@@ -45,7 +45,8 @@ public class Bootstrap : MonoBehaviour
             typeof(Rotation),
             typeof(Scale),
             typeof(Velocity),
-            typeof(Acceleration));
+            typeof(Acceleration),
+            typeof(NeighborsEntityBuffer));
         var random = new Unity.Mathematics.Random(853);
 
         var renderer = rendererComponent.Value;

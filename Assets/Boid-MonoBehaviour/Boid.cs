@@ -60,20 +60,6 @@ public class Boid : MonoBehaviour
         }
     }
 
-    void UpdateSeparation()
-    {
-        if (neighbors.Count == 0) return;
-
-        Vector3 force = Vector3.zero;
-        foreach (var neighbor in neighbors)
-        {
-            force += (pos - neighbor.pos).normalized;
-        }
-        force /= neighbors.Count;
-
-        accel += force * param.separationWeight;
-    }
-
     void UpdateWalls()
     {
         if (!simulation) return;
@@ -97,8 +83,24 @@ public class Boid : MonoBehaviour
         return Vector3.zero;
     }
 
+    void UpdateSeparation()
+    {
+        if (neighbors.Count == 0) return;
+
+        Vector3 force = Vector3.zero;
+        foreach (var neighbor in neighbors)
+        {
+            force += (pos - neighbor.pos).normalized;
+        }
+        force /= neighbors.Count;
+
+        accel += force * param.separationWeight;
+    }
+
     void UpdateAlignment()
     {
+        if (neighbors.Count == 0) return;
+
         var averageVelocity = Vector3.zero;
         foreach (var neighbor in neighbors)
         {
@@ -111,6 +113,8 @@ public class Boid : MonoBehaviour
 
     void UpdateCohesion()
     {
+        if (neighbors.Count == 0) return;
+
         var averagePos = Vector3.zero;
         foreach (var neighbor in neighbors)
         {

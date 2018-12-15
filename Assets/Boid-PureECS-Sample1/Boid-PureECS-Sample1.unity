@@ -264,7 +264,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3161e82cb597f4c32ba93ee624d55560, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  boidCount: 100
+  boidCount: 1000
   boidScale: {x: 0.1, y: 0.1, z: 0.3}
   param: {fileID: 11400000, guid: b4d1e89f21b5e48e1a9817346dd475fe, type: 2}
   rendererComponent: {fileID: 1099352407}
