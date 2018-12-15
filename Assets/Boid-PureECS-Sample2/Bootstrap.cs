@@ -56,7 +56,7 @@ public class Bootstrap : MonoBehaviour
         {
             var entity = manager.CreateEntity(archetype);
             var rot = random.NextQuaternionRotation();
-            manager.SetComponentData(entity, new Position() { Value = random.NextFloat3(1f) });
+            manager.SetComponentData(entity, new Position() { Value = math.normalize(random.NextFloat3(1f)) });
             manager.SetComponentData(entity, new Rotation() { Value = rot });
             manager.SetComponentData(entity, new Scale() { Value = new float3(boidScale.x, boidScale.y, boidScale.z) });
             manager.SetComponentData(entity, new Velocity() { Value = math.mul(rot, new float3(0, 0, 1)) * param.initSpeed });

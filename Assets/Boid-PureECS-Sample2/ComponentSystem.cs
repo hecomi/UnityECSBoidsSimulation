@@ -36,9 +36,11 @@ public class NeighborDetectionSystem : ComponentSystem
 			for (int j = 0; j < data.Length; ++j)
 			{
 				if (i == j) continue;
+
 				float3 pos1 = data.positions[j].Value;
 				var to = pos1 - pos0;
 				var dist = math.length(to);
+
 				if (dist < distThresh)
 				{
 					var dir = math.normalize(to);
