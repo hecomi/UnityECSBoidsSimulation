@@ -42,24 +42,14 @@ public class Simulation : MonoBehaviour
         boids_.RemoveAt(lastIndex);
     }
 
-    void Start()
-    {
-        for (int i = 0; i < boidCount; ++i)
-        {
-            AddBoid();
-        }
-    }
-
     void Update()
     {
         while (boids_.Count < boidCount)
         {
-            Debug.Log("add");
             AddBoid();
         }
         while (boids_.Count > boidCount)
         {
-            Debug.Log("remove");
             RemoveBoid();
         }
     }

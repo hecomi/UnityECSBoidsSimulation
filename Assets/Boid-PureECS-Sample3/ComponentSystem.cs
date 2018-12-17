@@ -1,10 +1,12 @@
 ﻿using Unity.Entities;
+using Unity.Jobs;
 using Unity.Transforms;
 using Unity.Collections;
 using Unity.Mathematics;
+using Unity.Burst;
 using UnityEngine;
 
-namespace Boid.PureECS.Sample2
+namespace Boid.PureECS.Sample3
 {
 
 public class NeighborDetectionSystem : ComponentSystem
@@ -48,6 +50,7 @@ public class NeighborDetectionSystem : ComponentSystem
                     if (prod > prodThresh)
                     {
                         data.neighbors[i].Add(new NeighborsEntityBuffer { Value = data.entities[j] });
+                        if (data.neighbors[i].Length >= data.neighbors[i].Capacity) break;
                     }
                 }
             }
@@ -55,7 +58,7 @@ public class NeighborDetectionSystem : ComponentSystem
     }
 }
 
-public class WallSystem : ComponentSystem
+public class WallSystem : JobComponentSystem
 {
     struct Data
     {
@@ -66,42 +69,49 @@ public class WallSystem : ComponentSystem
 
     [Inject] Data data;
 
-    protected override void OnUpdate()
+    public struct Job : IJobParallelFor
     {
-        var param = Bootstrap.Param;
-        var scale = param.wallScale * 0.5f;
-        var thresh = param.wallDistance;
-        var weight = param.wallWeight;
+        [ReadOnly] public ComponentDataArray<Position> positions;
+        public ComponentDataArray<Acceleration> accelerations;
+        [ReadOnly] public float scale;
+        [ReadOnly] public float thresh;
+        [ReadOnly] public float weight;
 
-        var r = new float3(+1, 0, 0);
-        var u = new float3(0, +1, 0);
-        var f = new float3(0, 0, +1);
-        var l = new float3(-1, 0, 0);
-        var d = new float3(0, -1, 0);
-        var b = new float3(0, 0, -1);
-
-        for (int i = 0; i < data.Length; ++i)
+        public void Execute(int index)
         {
-            float3 pos = data.positions[i].Value;
-            float3 accel = data.accelerations[i].Value;
+            float3 pos = positions[index].Value;
+            float3 accel = accelerations[index].Value;
             accel +=
-                CalcAccelAgainstWall(-scale - pos.x, r, thresh, weight) +
-                CalcAccelAgainstWall(-scale - pos.y, u, thresh, weight) +
-                CalcAccelAgainstWall(-scale - pos.z, f, thresh, weight) +
-                CalcAccelAgainstWall(+scale - pos.x, l, thresh, weight) +
-                CalcAccelAgainstWall(+scale - pos.y, d, thresh, weight) +
-                CalcAccelAgainstWall(+scale - pos.z, b, thresh, weight);
-            data.accelerations[i] = new Acceleration { Value = accel };
+                GetAccelAgainstWall(-scale - pos.x, new float3(+1, 0, 0), thresh, weight) +
+                GetAccelAgainstWall(-scale - pos.y, new float3(0, +1, 0), thresh, weight) +
+                GetAccelAgainstWall(-scale - pos.z, new float3(0, 0, +1), thresh, weight) +
+                GetAccelAgainstWall(+scale - pos.x, new float3(-1, 0, 0), thresh, weight) +
+                GetAccelAgainstWall(+scale - pos.y, new float3(0, -1, 0), thresh, weight) +
+                GetAccelAgainstWall(+scale - pos.z, new float3(0, 0, -1), thresh, weight);
+            accelerations[index] = new Acceleration { Value = accel };
+        }
+
+        float3 GetAccelAgainstWall(float dist, float3 dir, float thresh, float weight)
+        {
+            if (dist < thresh)
+            {
+                return dir * (weight / math.abs(dist / thresh));
+            }
+            return float3.zero;
         }
     }
 
-    float3 CalcAccelAgainstWall(float dist, float3 dir, float thresh, float weight)
+    protected override JobHandle OnUpdate(JobHandle inputDeps)
     {
-        if (dist < thresh)
+        var job = new Job 
         {
-            return dir * (weight / math.abs(dist / thresh));
-        }
-        return float3.zero;
+            positions = data.positions,
+            accelerations = data.accelerations,
+            scale = Bootstrap.Param.wallScale * 0.5f,
+            thresh = Bootstrap.Param.wallDistance,
+            weight = Bootstrap.Param.wallWeight,
+        };
+        return job.Schedule(data.Length, 32, inputDeps);
     }
 }
 

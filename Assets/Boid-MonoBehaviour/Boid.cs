@@ -23,12 +23,9 @@ public class Boid : MonoBehaviour
     {
         UpdateNeighbors();
         UpdateWalls();
-        if (neighbors.Count > 0)
-        {
-            UpdateSeparation();
-            UpdateAlignment();
-            UpdateCohesion();
-        }
+        UpdateSeparation();
+        UpdateAlignment();
+        UpdateCohesion();
         UpdateMove();
     }
 
@@ -66,15 +63,15 @@ public class Boid : MonoBehaviour
 
         var scale = param.wallScale * 0.5f;
         accel +=
-            GetAccelAgainstWall(-scale - pos.x, Vector3.right) +
-            GetAccelAgainstWall(-scale - pos.y, Vector3.up) +
-            GetAccelAgainstWall(-scale - pos.z, Vector3.forward) +
-            GetAccelAgainstWall(+scale - pos.x, Vector3.left) +
-            GetAccelAgainstWall(+scale - pos.y, Vector3.down) +
-            GetAccelAgainstWall(+scale - pos.z, Vector3.back);
+            CalcAccelAgainstWall(-scale - pos.x, Vector3.right) +
+            CalcAccelAgainstWall(-scale - pos.y, Vector3.up) +
+            CalcAccelAgainstWall(-scale - pos.z, Vector3.forward) +
+            CalcAccelAgainstWall(+scale - pos.x, Vector3.left) +
+            CalcAccelAgainstWall(+scale - pos.y, Vector3.down) +
+            CalcAccelAgainstWall(+scale - pos.z, Vector3.back);
     }
 
-    Vector3 GetAccelAgainstWall(float distance, Vector3 dir)
+    Vector3 CalcAccelAgainstWall(float distance, Vector3 dir)
     {
         if (distance < param.wallDistance)
         {
