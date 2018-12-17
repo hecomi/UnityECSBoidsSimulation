@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using UnityEngine.Rendering;
 using Unity.Entities;
 using Unity.Transforms;
 using Unity.Mathematics;
@@ -30,7 +31,10 @@ public class Bootstrap : MonoBehaviour
     Param param;
 
     [SerializeField]
-    MeshInstanceRendererComponent rendererComponent;
+    Mesh mesh;
+
+    [SerializeField]
+    Material material;
 
     void Awake()
     {
@@ -47,20 +51,22 @@ public class Bootstrap : MonoBehaviour
             typeof(Velocity),
             typeof(Acceleration));
         var random = new Unity.Mathematics.Random(853);
-
-        var renderer = rendererComponent.Value;
-        Destroy(rendererComponent.gameObject);
+        var renderer = new MeshInstanceRenderer {
+            castShadows = ShadowCastingMode.On,
+            receiveShadows = true,
+            mesh = mesh,
+            material = material
+        };
 
         for (int i = 0; i < boidCount; ++i)
         {
             var entity = manager.CreateEntity(archetype);
-            var rot = random.NextQuaternionRotation();
             manager.SetComponentData(entity, new Position { Value = random.NextFloat3(1f) });
-            manager.SetComponentData(entity, new Rotation { Value = rot });
+            manager.SetComponentData(entity, new Rotation { Value = quaternion.identity });
             manager.SetComponentData(entity, new Scale { Value = new float3(boidScale.x, boidScale.y, boidScale.z) });
-            manager.SetComponentData(entity, new Velocity { Value = math.mul(rot, new float3(0, 0, 1)) * param.initSpeed });
+            manager.SetComponentData(entity, new Velocity { Value = random.NextFloat3Direction() * param.initSpeed });
             manager.SetComponentData(entity, new Acceleration { Value = float3.zero });
-            manager.AddSharedComponentData(entity, rendererComponent.Value);
+            manager.AddSharedComponentData(entity, renderer);
         }
     }
 
