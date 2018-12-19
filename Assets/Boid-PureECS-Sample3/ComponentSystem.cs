@@ -3,7 +3,6 @@ using Unity.Jobs;
 using Unity.Transforms;
 using Unity.Collections;
 using Unity.Mathematics;
-using Unity.Burst;
 using UnityEngine;
 
 namespace Boid.PureECS.Sample3
@@ -11,24 +10,15 @@ namespace Boid.PureECS.Sample3
 
 public class BoidsSystemGroup {}
 
-/*
 [UpdateBefore(typeof(BoidsSystemGroup))]
 public class NeighborDetectionSystem : JobComponentSystem
 {
-    struct Data
-    {
-        public readonly int Length;
-        [ReadOnly] public EntityArray entities;
-    }
-
-    [Inject] Data data;
-
     public struct Job : IJobProcessComponentDataWithEntity<Position, Velocity>
     {
         [ReadOnly] public float prodThresh;
         [ReadOnly] public float distThresh;
         [ReadOnly] public ComponentDataFromEntity<Position> positionFromEntity;
-        public BufferFromEntity<NeighborsEntityBuffer> neighborsFromEntity;
+        [ReadOnly] public BufferFromEntity<NeighborsEntityBuffer> neighborsFromEntity;
         [ReadOnly] public EntityArray entities;
 
         public void Execute(
@@ -64,6 +54,13 @@ public class NeighborDetectionSystem : JobComponentSystem
         }
     }
 
+    ComponentGroup group;
+
+    protected override void OnCreateManager()
+    {
+        group = GetComponentGroup(typeof(Position), typeof(Velocity), typeof(NeighborsEntityBuffer));
+    }
+
     protected override JobHandle OnUpdate(JobHandle inputDeps)
     {
         var job = new Job
@@ -72,58 +69,9 @@ public class NeighborDetectionSystem : JobComponentSystem
             distThresh = Bootstrap.Param.neighborDistance,
             neighborsFromEntity = GetBufferFromEntity<NeighborsEntityBuffer>(false),
             positionFromEntity = GetComponentDataFromEntity<Position>(true),
-            entities = data.entities,
+            entities = group.GetEntityArray(),
         };
         return job.Schedule(this, inputDeps);
-    }
-}
-*/
-[UpdateBefore(typeof(BoidsSystemGroup))]
-public class NeighborDetectionSystem : ComponentSystem
-{
-    struct Data
-    {
-        public readonly int Length;
-        [ReadOnly] public ComponentDataArray<Position> positions;
-        [ReadOnly] public EntityArray entities;
-        public ComponentDataArray<Velocity> velocities;
-        [WriteOnly] public BufferArray<NeighborsEntityBuffer> neighbors;
-    }
-
-    [Inject] Data data;
-
-    protected override void OnUpdate()
-    {
-        var param = Bootstrap.Param;
-        float prodThresh = math.cos(math.radians(param.neighborFov));
-        float distThresh = param.neighborDistance;
-
-        for (int i = 0; i < data.Length; ++i)
-        {
-            data.neighbors[i].Clear();
-
-            float3 pos0 = data.positions[i].Value;
-            float3 fwd0 = math.normalize(data.velocities[i].Value);
-
-            for (int j = 0; j < data.Length; ++j)
-            {
-                if (i == j) continue;
-
-                float3 pos1 = data.positions[j].Value;
-                var to = pos1 - pos0;
-                var dist = math.length(to);
-
-                if (dist < distThresh)
-                {
-                    var dir = math.normalize(to);
-                    var prod = Vector3.Dot(dir, fwd0);
-                    if (prod > prodThresh)
-                    {
-                        data.neighbors[i].Add(new NeighborsEntityBuffer { Value = data.entities[j] });
-                    }
-                }
-            }
-        }
     }
 }
 
