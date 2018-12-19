@@ -9,6 +9,76 @@ using UnityEngine;
 namespace Boid.PureECS.Sample3
 {
 
+public class BoidsSystemGroup {}
+
+/*
+[UpdateBefore(typeof(BoidsSystemGroup))]
+public class NeighborDetectionSystem : JobComponentSystem
+{
+    struct Data
+    {
+        public readonly int Length;
+        [ReadOnly] public EntityArray entities;
+    }
+
+    [Inject] Data data;
+
+    public struct Job : IJobProcessComponentDataWithEntity<Position, Velocity>
+    {
+        [ReadOnly] public float prodThresh;
+        [ReadOnly] public float distThresh;
+        [ReadOnly] public ComponentDataFromEntity<Position> positionFromEntity;
+        public BufferFromEntity<NeighborsEntityBuffer> neighborsFromEntity;
+        [ReadOnly] public EntityArray entities;
+
+        public void Execute(
+            Entity entity,
+            int index,
+            [ReadOnly] ref Position pos,
+            [ReadOnly] ref Velocity velocity)
+        {
+            neighborsFromEntity[entity].Clear();
+
+            float3 pos0 = pos.Value;
+            float3 fwd0 = math.normalize(velocity.Value);
+
+            for (int i = 0; i < entities.Length; ++i)
+            {
+                var neighbor = entities[i];
+                if (neighbor == entity) continue;
+
+                float3 pos1 = positionFromEntity[neighbor].Value;
+                var to = pos1 - pos0;
+                var dist = math.length(to);
+
+                if (dist < distThresh)
+                {
+                    var dir = math.normalize(to);
+                    var prod = Vector3.Dot(dir, fwd0);
+                    if (prod > prodThresh)
+                    {
+                        neighborsFromEntity[entity].Add(new NeighborsEntityBuffer { Value = neighbor });
+                    }
+                }
+            }
+        }
+    }
+
+    protected override JobHandle OnUpdate(JobHandle inputDeps)
+    {
+        var job = new Job
+        {
+            prodThresh = math.cos(math.radians(Bootstrap.Param.neighborFov)),
+            distThresh = Bootstrap.Param.neighborDistance,
+            neighborsFromEntity = GetBufferFromEntity<NeighborsEntityBuffer>(false),
+            positionFromEntity = GetComponentDataFromEntity<Position>(true),
+            entities = data.entities,
+        };
+        return job.Schedule(this, inputDeps);
+    }
+}
+*/
+[UpdateBefore(typeof(BoidsSystemGroup))]
 public class NeighborDetectionSystem : ComponentSystem
 {
     struct Data
@@ -50,7 +120,6 @@ public class NeighborDetectionSystem : ComponentSystem
                     if (prod > prodThresh)
                     {
                         data.neighbors[i].Add(new NeighborsEntityBuffer { Value = data.entities[j] });
-                        if (data.neighbors[i].Length >= data.neighbors[i].Capacity) break;
                     }
                 }
             }
@@ -58,37 +127,27 @@ public class NeighborDetectionSystem : ComponentSystem
     }
 }
 
+[UpdateInGroup(typeof(BoidsSystemGroup))]
 public class WallSystem : JobComponentSystem
 {
-    struct Data
+    public struct Job : IJobProcessComponentData<Position, Acceleration>
     {
-        public readonly int Length;
-        [ReadOnly] public ComponentDataArray<Position> positions;
-        public ComponentDataArray<Acceleration> accelerations;
-    }
-
-    [Inject] Data data;
-
-    public struct Job : IJobParallelFor
-    {
-        [ReadOnly] public ComponentDataArray<Position> positions;
-        public ComponentDataArray<Acceleration> accelerations;
         [ReadOnly] public float scale;
         [ReadOnly] public float thresh;
         [ReadOnly] public float weight;
 
-        public void Execute(int index)
+        public void Execute([ReadOnly] ref Position pos, ref Acceleration accel)
         {
-            float3 pos = positions[index].Value;
-            float3 accel = accelerations[index].Value;
-            accel +=
-                GetAccelAgainstWall(-scale - pos.x, new float3(+1, 0, 0), thresh, weight) +
-                GetAccelAgainstWall(-scale - pos.y, new float3(0, +1, 0), thresh, weight) +
-                GetAccelAgainstWall(-scale - pos.z, new float3(0, 0, +1), thresh, weight) +
-                GetAccelAgainstWall(+scale - pos.x, new float3(-1, 0, 0), thresh, weight) +
-                GetAccelAgainstWall(+scale - pos.y, new float3(0, -1, 0), thresh, weight) +
-                GetAccelAgainstWall(+scale - pos.z, new float3(0, 0, -1), thresh, weight);
-            accelerations[index] = new Acceleration { Value = accel };
+            accel = new Acceleration
+            {
+                Value = accel.Value +
+                    GetAccelAgainstWall(-scale - pos.Value.x, new float3(+1, 0, 0), thresh, weight) +
+                    GetAccelAgainstWall(-scale - pos.Value.y, new float3(0, +1, 0), thresh, weight) +
+                    GetAccelAgainstWall(-scale - pos.Value.z, new float3(0, 0, +1), thresh, weight) +
+                    GetAccelAgainstWall(+scale - pos.Value.x, new float3(-1, 0, 0), thresh, weight) +
+                    GetAccelAgainstWall(+scale - pos.Value.y, new float3(0, -1, 0), thresh, weight) +
+                    GetAccelAgainstWall(+scale - pos.Value.z, new float3(0, 0, -1), thresh, weight)
+            };
         }
 
         float3 GetAccelAgainstWall(float dist, float3 dir, float thresh, float weight)
@@ -105,167 +164,170 @@ public class WallSystem : JobComponentSystem
     {
         var job = new Job 
         {
-            positions = data.positions,
-            accelerations = data.accelerations,
             scale = Bootstrap.Param.wallScale * 0.5f,
             thresh = Bootstrap.Param.wallDistance,
             weight = Bootstrap.Param.wallWeight,
         };
-        return job.Schedule(data.Length, 32, inputDeps);
+        return job.Schedule(this, inputDeps);
     }
 }
 
-public class SeparationSystem : ComponentSystem
+[UpdateInGroup(typeof(BoidsSystemGroup))]
+public class SeparationSystem : JobComponentSystem
 {
-    struct Data
+    public struct Job : IJobProcessComponentDataWithEntity<Position, Acceleration>
     {
-        public readonly int Length;
-        [ReadOnly] public ComponentDataArray<Position> positions;
-        public ComponentDataArray<Acceleration> accelerations;
-        [ReadOnly] public BufferArray<NeighborsEntityBuffer> neighbors;
-    }
+        [ReadOnly] public float separationWeight;
+        [ReadOnly] public BufferFromEntity<NeighborsEntityBuffer> neighborsFromEntity;
+        [ReadOnly] public ComponentDataFromEntity<Position> positionFromEntity;
 
-    [Inject] Data data;
-
-    protected override void OnUpdate()
-    {
-        var param = Bootstrap.Param;
-
-        for (int i = 0; i < data.Length; ++i)
+        public void Execute(Entity entity, int index, [ReadOnly] ref Position pos, ref Acceleration accel)
         {
-            var neighbors = data.neighbors[i].Reinterpret<Entity>();
-            if (neighbors.Length == 0) continue;
+            var neighbors = neighborsFromEntity[entity].Reinterpret<Entity>();
+            if (neighbors.Length == 0) return;
+
+            var pos0 = pos.Value;
 
             var force = float3.zero;
-            var pos0 = data.positions[i].Value;
-            var accel = data.accelerations[i].Value;
-
-            for (int j = 0; j < neighbors.Length; ++j)
+            for (int i = 0; i < neighbors.Length; ++i)
             {
-                var pos1 = EntityManager.GetComponentData<Position>(neighbors[j]).Value;
+                var pos1 = positionFromEntity[neighbors[i]].Value;
                 force += math.normalize(pos0 - pos1);
             }
-
             force /= neighbors.Length;
-            var dAccel = force * param.separationWeight;
-            data.accelerations[i] = new Acceleration { Value = accel + dAccel };
+
+            var dAccel = force * separationWeight;
+            accel = new Acceleration { Value = accel.Value + dAccel };
         }
+    }
+
+    protected override JobHandle OnUpdate(JobHandle inputDeps)
+    {
+        var job = new Job 
+        {
+            separationWeight = Bootstrap.Param.separationWeight,
+            neighborsFromEntity = GetBufferFromEntity<NeighborsEntityBuffer>(true),
+            positionFromEntity = GetComponentDataFromEntity<Position>(true),
+        };
+        return job.Schedule(this, inputDeps);
     }
 }
 
-public class AlignmentSystem : ComponentSystem
+[UpdateInGroup(typeof(BoidsSystemGroup))]
+public class AlignmentSystem : JobComponentSystem
 {
-    struct Data
+    public struct Job : IJobProcessComponentDataWithEntity<Velocity, Acceleration>
     {
-        public readonly int Length;
-        [ReadOnly] public ComponentDataArray<Velocity> velocities;
-        public ComponentDataArray<Acceleration> accelerations;
-        [ReadOnly] public BufferArray<NeighborsEntityBuffer> neighbors;
-    }
+        [ReadOnly] public float alignmentWeight;
+        [ReadOnly] public BufferFromEntity<NeighborsEntityBuffer> neighborsFromEntity;
+        [ReadOnly] public ComponentDataFromEntity<Velocity> velocityFromEntity;
 
-    [Inject] Data data;
-
-    protected override void OnUpdate()
-    {
-        var param = Bootstrap.Param;
-
-        for (int i = 0; i < data.Length; ++i)
+        public void Execute(Entity entity, int index, [ReadOnly] ref Velocity velocity, ref Acceleration accel)
         {
-            var neighbors = data.neighbors[i].Reinterpret<Entity>();
-            if (neighbors.Length == 0) continue;
+            var neighbors = neighborsFromEntity[entity].Reinterpret<Entity>();
+            if (neighbors.Length == 0) return;
 
             var averageVelocity = float3.zero;
-            var velocity = data.velocities[i].Value;
-            var accel = data.accelerations[i].Value;
-
-            for (int j = 0; j < neighbors.Length; ++j)
+            for (int i = 0; i < neighbors.Length; ++i)
             {
-                averageVelocity += EntityManager.GetComponentData<Velocity>(neighbors[j]).Value;
+                averageVelocity += velocityFromEntity[neighbors[i]].Value;
             }
-
             averageVelocity /= neighbors.Length;
-            var dAccel = (averageVelocity - velocity) * param.alignmentWeight;
-            data.accelerations[i] = new Acceleration { Value = accel + dAccel };
+
+            var dAccel = (averageVelocity - velocity.Value) * alignmentWeight;
+            accel = new Acceleration { Value = accel.Value + dAccel };
         }
+    }
+
+    protected override JobHandle OnUpdate(JobHandle inputDeps)
+    {
+        var job = new Job 
+        {
+            alignmentWeight = Bootstrap.Param.alignmentWeight,
+            neighborsFromEntity = GetBufferFromEntity<NeighborsEntityBuffer>(true),
+            velocityFromEntity = GetComponentDataFromEntity<Velocity>(true),
+        };
+        return job.Schedule(this, inputDeps);
     }
 }
 
-public class CohesionSystem : ComponentSystem
+[UpdateInGroup(typeof(BoidsSystemGroup))]
+public class CohesionSystem : JobComponentSystem
 {
-    struct Data
+    public struct Job : IJobProcessComponentDataWithEntity<Position, Acceleration>
     {
-        public readonly int Length;
-        [ReadOnly] public ComponentDataArray<Position> positions;
-        public ComponentDataArray<Acceleration> accelerations;
-        [ReadOnly] public BufferArray<NeighborsEntityBuffer> neighbors;
-    }
+        [ReadOnly] public float cohesionWeight;
+        [ReadOnly] public BufferFromEntity<NeighborsEntityBuffer> neighborsFromEntity;
+        [ReadOnly] public ComponentDataFromEntity<Position> positionFromEntity;
 
-    [Inject] Data data;
-
-    protected override void OnUpdate()
-    {
-        var param = Bootstrap.Param;
-
-        for (int i = 0; i < data.Length; ++i)
+        public void Execute(Entity entity, int index, [ReadOnly] ref Position pos, ref Acceleration accel)
         {
-            var neighbors = data.neighbors[i].Reinterpret<Entity>();
-            if (neighbors.Length == 0) continue;
+            var neighbors = neighborsFromEntity[entity].Reinterpret<Entity>();
+            if (neighbors.Length == 0) return;
+
+            var pos0 = pos.Value;
 
             var averagePos = float3.zero;
-            var pos = data.positions[i].Value;
-            var accel = data.accelerations[i].Value;
-
-            for (int j = 0; j < neighbors.Length; ++j)
+            for (int i = 0; i < neighbors.Length; ++i)
             {
-                averagePos += EntityManager.GetComponentData<Position>(neighbors[j]).Value;
+                averagePos += positionFromEntity[neighbors[i]].Value;
             }
-
             averagePos /= neighbors.Length;
-            var dAccel = (averagePos - pos) * param.cohesionWeight;
 
-            data.accelerations[i] = new Acceleration { Value = accel + dAccel };
+            var dAccel = (averagePos - pos.Value) * cohesionWeight;
+            accel = new Acceleration { Value = accel.Value + dAccel };
         }
+    }
+
+    protected override JobHandle OnUpdate(JobHandle inputDeps)
+    {
+        var job = new Job 
+        {
+            cohesionWeight = Bootstrap.Param.cohesionWeight,
+            neighborsFromEntity = GetBufferFromEntity<NeighborsEntityBuffer>(true),
+            positionFromEntity = GetComponentDataFromEntity<Position>(true),
+        };
+        return job.Schedule(this, inputDeps);
     }
 }
 
-public class MoveSystem : ComponentSystem
+[UpdateAfter(typeof(BoidsSystemGroup))]
+public class MoveSystem : JobComponentSystem
 {
-    struct Data
+    public struct Job : IJobProcessComponentData<Position, Rotation, Velocity, Acceleration>
     {
-        public readonly int Length;
-        public ComponentDataArray<Position> positions;
-        public ComponentDataArray<Rotation> rotations;
-        public ComponentDataArray<Velocity> velocities;
-        public ComponentDataArray<Acceleration> accelerations;
+        [ReadOnly] public float dt;
+        [ReadOnly] public float minSpeed;
+        [ReadOnly] public float maxSpeed;
+
+        public void Execute(
+            ref Position pos,
+            [WriteOnly] ref Rotation rot,
+            ref Velocity velocity,
+            ref Acceleration accel)
+        {
+            var v = velocity.Value;
+            v += accel.Value * dt;
+            var dir = math.normalize(v);
+            var speed = math.length(v);
+            v = math.clamp(speed, minSpeed, maxSpeed) * dir;
+
+            pos = new Position { Value = pos.Value + v * dt };
+            rot = new Rotation { Value = quaternion.LookRotationSafe(dir, new float3(0, 1, 0)) };
+            velocity = new Velocity { Value = v };
+            accel = new Acceleration { Value = float3.zero };
+        }
     }
 
-    [Inject] Data data;
-
-    protected override void OnUpdate()
+    protected override JobHandle OnUpdate(JobHandle inputDeps)
     {
-        var dt = Time.deltaTime;
-        var minSpeed = Bootstrap.Param.minSpeed;
-        var maxSpeed = Bootstrap.Param.maxSpeed;
-
-        for (int i = 0; i < data.Length; ++i)
+        var job = new Job
         {
-            var velocity = data.velocities[i].Value;
-            var pos = data.positions[i].Value;
-            var rot = data.rotations[i].Value;
-            var accel = data.accelerations[i].Value;
-
-            velocity += accel * dt;
-            var dir = math.normalize(velocity);
-            var speed = math.length(velocity);
-            velocity = math.clamp(speed, minSpeed, maxSpeed) * dir;
-            pos += velocity * dt;
-            rot = quaternion.LookRotationSafe(dir, new float3(0, 1, 0));
-
-            data.velocities[i] = new Velocity { Value = velocity };
-            data.positions[i] = new Position { Value = pos };
-            data.rotations[i] = new Rotation { Value = rot };
-            data.accelerations[i] = new Acceleration { Value = float3.zero };
-        }
+            dt = Time.deltaTime,
+            minSpeed = Bootstrap.Param.minSpeed,
+            maxSpeed = Bootstrap.Param.maxSpeed,
+        };
+        return job.Schedule(this, inputDeps);
     }
 }
 

@@ -7,6 +7,9 @@ using UnityEngine;
 namespace Boid.PureECS.Sample2
 {
 
+public class BoidsSystemGroup {}
+
+[UpdateBefore(typeof(BoidsSystemGroup))]
 public class NeighborDetectionSystem : ComponentSystem
 {
     struct Data
@@ -55,6 +58,7 @@ public class NeighborDetectionSystem : ComponentSystem
     }
 }
 
+[UpdateInGroup(typeof(BoidsSystemGroup))]
 public class WallSystem : ComponentSystem
 {
     struct Data
@@ -105,6 +109,7 @@ public class WallSystem : ComponentSystem
     }
 }
 
+[UpdateInGroup(typeof(BoidsSystemGroup))]
 public class SeparationSystem : ComponentSystem
 {
     struct Data
@@ -143,6 +148,7 @@ public class SeparationSystem : ComponentSystem
     }
 }
 
+[UpdateInGroup(typeof(BoidsSystemGroup))]
 public class AlignmentSystem : ComponentSystem
 {
     struct Data
@@ -180,6 +186,7 @@ public class AlignmentSystem : ComponentSystem
     }
 }
 
+[UpdateInGroup(typeof(BoidsSystemGroup))]
 public class CohesionSystem : ComponentSystem
 {
     struct Data
@@ -218,6 +225,7 @@ public class CohesionSystem : ComponentSystem
     }
 }
 
+[UpdateAfter(typeof(BoidsSystemGroup))]
 public class MoveSystem : ComponentSystem
 {
     struct Data
