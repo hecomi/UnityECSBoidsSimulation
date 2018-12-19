@@ -5,15 +5,19 @@ using Unity.Collections;
 using Unity.Mathematics;
 using UnityEngine;
 
-namespace Boid.PureECS.Sample3
+namespace Boid.PureECS.Sample4
 {
 
-public class BoidsSystemGroup {}
-
-[UpdateBefore(typeof(BoidsSystemGroup))]
-public class NeighborDetectionSystem : JobComponentSystem
+public class BoidsSimulationSystem : JobComponentSystem
 {
-    public struct Job : IJobProcessComponentDataWithEntity<Position, Velocity>
+    ComponentGroup group;
+
+    protected override void OnCreateManager()
+    {
+        group = GetComponentGroup(typeof(Position), typeof(Velocity), typeof(NeighborsEntityBuffer));
+    }
+
+    public struct NeighborsDetectionJob : IJobProcessComponentDataWithEntity<Position, Velocity>
     {
         [ReadOnly] public float prodThresh;
         [ReadOnly] public float distThresh;
@@ -54,31 +58,7 @@ public class NeighborDetectionSystem : JobComponentSystem
         }
     }
 
-    ComponentGroup group;
-
-    protected override void OnCreateManager()
-    {
-        group = GetComponentGroup(typeof(Position), typeof(Velocity), typeof(NeighborsEntityBuffer));
-    }
-
-    protected override JobHandle OnUpdate(JobHandle inputDeps)
-    {
-        var job = new Job
-        {
-            prodThresh = math.cos(math.radians(Bootstrap.Param.neighborFov)),
-            distThresh = Bootstrap.Param.neighborDistance,
-            neighborsFromEntity = GetBufferFromEntity<NeighborsEntityBuffer>(false),
-            positionFromEntity = GetComponentDataFromEntity<Position>(true),
-            entities = group.GetEntityArray(),
-        };
-        return job.Schedule(this, inputDeps);
-    }
-}
-
-[UpdateInGroup(typeof(BoidsSystemGroup))]
-public class WallSystem : JobComponentSystem
-{
-    public struct Job : IJobProcessComponentData<Position, Acceleration>
+    public struct WallJob : IJobProcessComponentData<Position, Acceleration>
     {
         [ReadOnly] public float scale;
         [ReadOnly] public float thresh;
@@ -108,22 +88,7 @@ public class WallSystem : JobComponentSystem
         }
     }
 
-    protected override JobHandle OnUpdate(JobHandle inputDeps)
-    {
-        var job = new Job 
-        {
-            scale = Bootstrap.Param.wallScale * 0.5f,
-            thresh = Bootstrap.Param.wallDistance,
-            weight = Bootstrap.Param.wallWeight,
-        };
-        return job.Schedule(this, inputDeps);
-    }
-}
-
-[UpdateInGroup(typeof(BoidsSystemGroup))]
-public class SeparationSystem : JobComponentSystem
-{
-    public struct Job : IJobProcessComponentDataWithEntity<Position, Acceleration>
+    public struct SeparationJob : IJobProcessComponentDataWithEntity<Position, Acceleration>
     {
         [ReadOnly] public float separationWeight;
         [ReadOnly] public BufferFromEntity<NeighborsEntityBuffer> neighborsFromEntity;
@@ -149,22 +114,7 @@ public class SeparationSystem : JobComponentSystem
         }
     }
 
-    protected override JobHandle OnUpdate(JobHandle inputDeps)
-    {
-        var job = new Job 
-        {
-            separationWeight = Bootstrap.Param.separationWeight,
-            neighborsFromEntity = GetBufferFromEntity<NeighborsEntityBuffer>(true),
-            positionFromEntity = GetComponentDataFromEntity<Position>(true),
-        };
-        return job.Schedule(this, inputDeps);
-    }
-}
-
-[UpdateInGroup(typeof(BoidsSystemGroup))]
-public class AlignmentSystem : JobComponentSystem
-{
-    public struct Job : IJobProcessComponentDataWithEntity<Velocity, Acceleration>
+    public struct AlignmentJob : IJobProcessComponentDataWithEntity<Velocity, Acceleration>
     {
         [ReadOnly] public float alignmentWeight;
         [ReadOnly] public BufferFromEntity<NeighborsEntityBuffer> neighborsFromEntity;
@@ -187,22 +137,7 @@ public class AlignmentSystem : JobComponentSystem
         }
     }
 
-    protected override JobHandle OnUpdate(JobHandle inputDeps)
-    {
-        var job = new Job 
-        {
-            alignmentWeight = Bootstrap.Param.alignmentWeight,
-            neighborsFromEntity = GetBufferFromEntity<NeighborsEntityBuffer>(true),
-            velocityFromEntity = GetComponentDataFromEntity<Velocity>(true),
-        };
-        return job.Schedule(this, inputDeps);
-    }
-}
-
-[UpdateInGroup(typeof(BoidsSystemGroup))]
-public class CohesionSystem : JobComponentSystem
-{
-    public struct Job : IJobProcessComponentDataWithEntity<Position, Acceleration>
+    public struct CohesionJob : IJobProcessComponentDataWithEntity<Position, Acceleration>
     {
         [ReadOnly] public float cohesionWeight;
         [ReadOnly] public BufferFromEntity<NeighborsEntityBuffer> neighborsFromEntity;
@@ -212,8 +147,6 @@ public class CohesionSystem : JobComponentSystem
         {
             var neighbors = neighborsFromEntity[entity].Reinterpret<Entity>();
             if (neighbors.Length == 0) return;
-
-            var pos0 = pos.Value;
 
             var averagePos = float3.zero;
             for (int i = 0; i < neighbors.Length; ++i)
@@ -227,22 +160,7 @@ public class CohesionSystem : JobComponentSystem
         }
     }
 
-    protected override JobHandle OnUpdate(JobHandle inputDeps)
-    {
-        var job = new Job 
-        {
-            cohesionWeight = Bootstrap.Param.cohesionWeight,
-            neighborsFromEntity = GetBufferFromEntity<NeighborsEntityBuffer>(true),
-            positionFromEntity = GetComponentDataFromEntity<Position>(true),
-        };
-        return job.Schedule(this, inputDeps);
-    }
-}
-
-[UpdateAfter(typeof(BoidsSystemGroup))]
-public class MoveSystem : JobComponentSystem
-{
-    public struct Job : IJobProcessComponentData<Position, Rotation, Velocity, Acceleration>
+    public struct MoveJob : IJobProcessComponentData<Position, Rotation, Velocity, Acceleration>
     {
         [ReadOnly] public float dt;
         [ReadOnly] public float minSpeed;
@@ -269,13 +187,74 @@ public class MoveSystem : JobComponentSystem
 
     protected override JobHandle OnUpdate(JobHandle inputDeps)
     {
-        var job = new Job
+        var neighbors = new NeighborsDetectionJob
+        {
+            prodThresh = math.cos(math.radians(Bootstrap.Param.neighborFov)),
+            distThresh = Bootstrap.Param.neighborDistance,
+            neighborsFromEntity = GetBufferFromEntity<NeighborsEntityBuffer>(false),
+            positionFromEntity = GetComponentDataFromEntity<Position>(true),
+            entities = group.GetEntityArray(),
+        };
+
+        var wall = new WallJob
+        {
+            scale = Bootstrap.Param.wallScale * 0.5f,
+            thresh = Bootstrap.Param.wallDistance,
+            weight = Bootstrap.Param.wallWeight,
+        };
+
+        var separation = new SeparationJob 
+        {
+            separationWeight = Bootstrap.Param.separationWeight,
+            neighborsFromEntity = GetBufferFromEntity<NeighborsEntityBuffer>(true),
+            positionFromEntity = GetComponentDataFromEntity<Position>(true),
+        };
+
+        var alignment = new AlignmentJob 
+        {
+            alignmentWeight = Bootstrap.Param.alignmentWeight,
+            neighborsFromEntity = GetBufferFromEntity<NeighborsEntityBuffer>(true),
+            velocityFromEntity = GetComponentDataFromEntity<Velocity>(true),
+        };
+
+        var cohesion = new CohesionJob 
+        {
+            cohesionWeight = Bootstrap.Param.cohesionWeight,
+            neighborsFromEntity = GetBufferFromEntity<NeighborsEntityBuffer>(true),
+            positionFromEntity = GetComponentDataFromEntity<Position>(true),
+        };
+
+        var move = new MoveJob
         {
             dt = Time.deltaTime,
             minSpeed = Bootstrap.Param.minSpeed,
             maxSpeed = Bootstrap.Param.maxSpeed,
         };
-        return job.Schedule(this, inputDeps);
+
+        inputDeps = neighbors.Schedule(this, inputDeps);
+        inputDeps = wall.Schedule(this, inputDeps);
+        inputDeps = separation.Schedule(this, inputDeps);
+        inputDeps = alignment.Schedule(this, inputDeps);
+        inputDeps = cohesion.Schedule(this, inputDeps);
+        inputDeps = move.Schedule(this, inputDeps);
+        return inputDeps;
+
+        /*
+        var neighborsHandle = neighbors.Schedule(this, inputDeps);
+
+        var wallHandle = wall.Schedule(this, neighborsHandle);
+        var separationHandle = separation.Schedule(this, neighborsHandle);
+        var alignmentHandle = alignment.Schedule(this, neighborsHandle);
+        var cohesionHandle = cohesion.Schedule(this, neighborsHandle);
+
+        var combinedDeps1 = JobHandle.CombineDependencies(wallHandle, separationHandle);
+        var combinedDeps2 = JobHandle.CombineDependencies(alignmentHandle, cohesionHandle);
+        var combinedDeps3 = JobHandle.CombineDependencies(combinedDeps1, combinedDeps2);
+
+        var moveHandle = move.Schedule(this, combinedDeps3);
+
+        return moveHandle;
+        */
     }
 }
 
