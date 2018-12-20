@@ -203,10 +203,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 1657608783}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 718b8620afea3494787a91fa7683f9dc, type: 3}
+  m_Script: {fileID: 11500000, guid: 91500c791a7dc42afabad8d32f327f4c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  boidCount: 1000
+  boidCount: 200
   boidScale: {x: 0.1, y: 0.1, z: 0.3}
   param: {fileID: 11400000, guid: b4d1e89f21b5e48e1a9817346dd475fe, type: 2}
   mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
