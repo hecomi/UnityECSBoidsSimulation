@@ -1,9 +1,4 @@
 ﻿using UnityEngine;
-using UnityEngine.Rendering;
-using Unity.Entities;
-using Unity.Transforms;
-using Unity.Mathematics;
-using Unity.Rendering;
 
 namespace Boid.PureECS.Sample6
 {
@@ -18,6 +13,11 @@ public class Bootstrap : MonoBehaviour
         { 
             return _Instance ?? (_Instance = FindObjectOfType<Bootstrap>());
         }
+    }
+
+    public static bool IsValid
+    {
+        get { return Instance != null; }
     }
 
     [SerializeField]

@@ -12,6 +12,7 @@ namespace Boid.PureECS.Sample6
 {
 
 [AlwaysUpdateSystem]
+[UpdateBefore(typeof(BoidsSimulationSystem))]
 public class BoidsEntityGenerationSystem : ComponentSystem
 {
     EntityArchetype archetype;
@@ -21,6 +22,8 @@ public class BoidsEntityGenerationSystem : ComponentSystem
 
     protected override void OnCreateManager()
     {
+        if (!Bootstrap.IsValid) return;
+
         archetype = EntityManager.CreateArchetype(
             typeof(Position),
             typeof(Rotation),
@@ -44,6 +47,8 @@ public class BoidsEntityGenerationSystem : ComponentSystem
 
     protected override void OnUpdate()
     {
+        if (!Bootstrap.IsValid) return;
+
         var entities = group.GetEntityArray();
         for (int i = 0; i < entities.Length - Bootstrap.Boid.count; ++i)
         {
@@ -306,23 +311,6 @@ public class BoidsSimulationSystem : JobComponentSystem
         inputDeps = cohesion.Schedule(this, inputDeps);
         inputDeps = move.Schedule(this, inputDeps);
         return inputDeps;
-
-        /*
-        var neighborsHandle = neighbors.Schedule(this, inputDeps);
-
-        var wallHandle = wall.Schedule(this, neighborsHandle);
-        var separationHandle = separation.Schedule(this, neighborsHandle);
-        var alignmentHandle = alignment.Schedule(this, neighborsHandle);
-        var cohesionHandle = cohesion.Schedule(this, neighborsHandle);
-
-        var combinedDeps1 = JobHandle.CombineDependencies(wallHandle, separationHandle);
-        var combinedDeps2 = JobHandle.CombineDependencies(alignmentHandle, cohesionHandle);
-        var combinedDeps3 = JobHandle.CombineDependencies(combinedDeps1, combinedDeps2);
-
-        var moveHandle = move.Schedule(this, combinedDeps3);
-
-        return moveHandle;
-        */
     }
 }
 

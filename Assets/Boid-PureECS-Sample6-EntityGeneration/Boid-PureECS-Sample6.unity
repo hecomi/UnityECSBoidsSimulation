@@ -203,14 +203,15 @@ MonoBehaviour:
   m_GameObject: {fileID: 1657608783}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 91500c791a7dc42afabad8d32f327f4c, type: 3}
+  m_Script: {fileID: 11500000, guid: 921cb03291cda44c3bd9547de0809587, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  boidCount: 200
-  boidScale: {x: 0.1, y: 0.1, z: 0.3}
   param: {fileID: 11400000, guid: b4d1e89f21b5e48e1a9817346dd475fe, type: 2}
-  mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
-  material: {fileID: 2100000, guid: 2f00c3a783c54457a9ae0ed9fe6d23f3, type: 2}
+  boidInfo:
+    count: 1000
+    scale: {x: 0.1, y: 0.1, z: 0.3}
+    mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+    material: {fileID: 2100000, guid: 2f00c3a783c54457a9ae0ed9fe6d23f3, type: 2}
 --- !u!4 &1657608785
 Transform:
   m_ObjectHideFlags: 0

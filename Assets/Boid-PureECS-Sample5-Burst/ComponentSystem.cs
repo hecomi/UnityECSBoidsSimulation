@@ -245,23 +245,6 @@ public class BoidsSimulationSystem : JobComponentSystem
         inputDeps = cohesion.Schedule(this, inputDeps);
         inputDeps = move.Schedule(this, inputDeps);
         return inputDeps;
-
-        /*
-        var neighborsHandle = neighbors.Schedule(this, inputDeps);
-
-        var wallHandle = wall.Schedule(this, neighborsHandle);
-        var separationHandle = separation.Schedule(this, neighborsHandle);
-        var alignmentHandle = alignment.Schedule(this, neighborsHandle);
-        var cohesionHandle = cohesion.Schedule(this, neighborsHandle);
-
-        var combinedDeps1 = JobHandle.CombineDependencies(wallHandle, separationHandle);
-        var combinedDeps2 = JobHandle.CombineDependencies(alignmentHandle, cohesionHandle);
-        var combinedDeps3 = JobHandle.CombineDependencies(combinedDeps1, combinedDeps2);
-
-        var moveHandle = move.Schedule(this, combinedDeps3);
-
-        return moveHandle;
-        */
     }
 }
 
