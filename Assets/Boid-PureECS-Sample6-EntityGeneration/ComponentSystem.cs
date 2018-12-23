@@ -30,7 +30,8 @@ public class BoidsEntityGenerationSystem : ComponentSystem
             typeof(Scale),
             typeof(Velocity),
             typeof(Acceleration),
-            typeof(NeighborsEntityBuffer));
+            typeof(NeighborsEntityBuffer),
+            typeof(MeshInstanceRenderer));
 
         group = GetComponentGroup(archetype.ComponentTypes);
 
@@ -70,8 +71,7 @@ public class BoidsEntityGenerationSystem : ComponentSystem
         PostUpdateCommands.SetComponent(new Scale { Value = new float3(scale.x, scale.y, scale.z) });
         PostUpdateCommands.SetComponent(new Velocity { Value = random.NextFloat3Direction() * initSpeed });
         PostUpdateCommands.SetComponent(new Acceleration { Value = float3.zero });
-        PostUpdateCommands.AddSharedComponent(renderer);
-
+        PostUpdateCommands.SetSharedComponent(renderer);
     }
 }
 

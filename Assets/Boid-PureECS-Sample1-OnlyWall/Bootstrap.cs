@@ -49,14 +49,15 @@ public class Bootstrap : MonoBehaviour
             typeof(Rotation),
             typeof(Scale),
             typeof(Velocity),
-            typeof(Acceleration));
-        var random = new Unity.Mathematics.Random(853);
+            typeof(Acceleration),
+            typeof(MeshInstanceRenderer));
         var renderer = new MeshInstanceRenderer {
             castShadows = ShadowCastingMode.On,
             receiveShadows = true,
             mesh = mesh,
             material = material
         };
+        var random = new Unity.Mathematics.Random(853);
 
         for (int i = 0; i < boidCount; ++i)
         {
@@ -66,7 +67,7 @@ public class Bootstrap : MonoBehaviour
             manager.SetComponentData(entity, new Scale { Value = new float3(boidScale.x, boidScale.y, boidScale.z) });
             manager.SetComponentData(entity, new Velocity { Value = random.NextFloat3Direction() * param.initSpeed });
             manager.SetComponentData(entity, new Acceleration { Value = float3.zero });
-            manager.AddSharedComponentData(entity, renderer);
+            manager.SetSharedComponentData(entity, renderer);
         }
     }
 
