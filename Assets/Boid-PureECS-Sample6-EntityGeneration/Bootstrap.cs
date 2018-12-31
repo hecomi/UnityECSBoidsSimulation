@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using Unity.Rendering;
 
 namespace Boid.PureECS.Sample6
 {
@@ -33,8 +34,7 @@ public class Bootstrap : MonoBehaviour
     {
         public int count;
         public Vector3 scale;
-        public Mesh mesh;
-        public Material material;
+        public MeshInstanceRenderer renderer;
     }
 
     [SerializeField]

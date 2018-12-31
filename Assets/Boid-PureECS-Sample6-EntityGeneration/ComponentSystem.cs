@@ -17,7 +17,6 @@ public class BoidsEntityGenerationSystem : ComponentSystem
 {
     EntityArchetype archetype;
     ComponentGroup group;
-    MeshInstanceRenderer renderer;
     Unity.Mathematics.Random random;
 
     protected override void OnCreateManager()
@@ -36,14 +35,6 @@ public class BoidsEntityGenerationSystem : ComponentSystem
         group = GetComponentGroup(archetype.ComponentTypes);
 
         random = new Unity.Mathematics.Random(853);
-
-        renderer = new MeshInstanceRenderer 
-        {
-            castShadows = ShadowCastingMode.On,
-            receiveShadows = true,
-            mesh = Bootstrap.Boid.mesh,
-            material = Bootstrap.Boid.material,
-        };
     }
 
     protected override void OnUpdate()
@@ -64,6 +55,7 @@ public class BoidsEntityGenerationSystem : ComponentSystem
     void CreateEntity()
     {
         var scale = Bootstrap.Boid.scale;
+        var renderer = Bootstrap.Boid.renderer;
         var initSpeed = Bootstrap.Param.initSpeed;
         PostUpdateCommands.CreateEntity(archetype);
         PostUpdateCommands.SetComponent(new Position { Value = random.NextFloat3(1f) });

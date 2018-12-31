@@ -31,10 +31,7 @@ public class Bootstrap : MonoBehaviour
     Param param;
 
     [SerializeField]
-    Mesh mesh;
-
-    [SerializeField]
-    Material material;
+    MeshInstanceRenderer renderer;
 
     void Awake()
     {
@@ -52,12 +49,6 @@ public class Bootstrap : MonoBehaviour
             typeof(Acceleration),
             typeof(NeighborsEntityBuffer),
             typeof(MeshInstanceRenderer));
-        var renderer = new MeshInstanceRenderer {
-            castShadows = ShadowCastingMode.On,
-            receiveShadows = true,
-            mesh = mesh,
-            material = material
-        };
         var random = new Unity.Mathematics.Random(853);
 
         for (int i = 0; i < boidCount; ++i)

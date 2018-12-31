@@ -209,8 +209,12 @@ MonoBehaviour:
   boidCount: 100
   boidScale: {x: 0.1, y: 0.1, z: 0.3}
   param: {fileID: 11400000, guid: b4d1e89f21b5e48e1a9817346dd475fe, type: 2}
-  mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
-  material: {fileID: 2100000, guid: 2f00c3a783c54457a9ae0ed9fe6d23f3, type: 2}
+  renderer:
+    mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+    material: {fileID: 2100000, guid: 2f00c3a783c54457a9ae0ed9fe6d23f3, type: 2}
+    subMesh: 0
+    castShadows: 1
+    receiveShadows: 1
 --- !u!4 &1657608785
 Transform:
   m_ObjectHideFlags: 0

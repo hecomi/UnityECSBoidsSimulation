@@ -6,6 +6,6 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/Scenes/SampleScene.unity
-    guid: 99c9720ab356a0642a771bea13969a05
+    path: Assets/Boid-PureECS-Sample3-Jobify/Boid-PureECS-Sample3.unity
+    guid: 912511a1bccd34e979c33522cf067a5a
   m_configObjects: {}
